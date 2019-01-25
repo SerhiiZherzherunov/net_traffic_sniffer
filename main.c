@@ -148,8 +148,7 @@ FILE* get_records_from_iface_file(const char *sniff_iface, Traffic_record_t **tr
 {
     FILE *fi;
     char *filename;
-    char *full_fname;
-    size_t file_size;
+    size_t file_size = 0;
     int if_len = sniff_iface == NULL ? 0 : strlen(sniff_iface);
 
     *tr = NULL;
@@ -206,7 +205,6 @@ FILE* get_records_from_iface_file(const char *sniff_iface, Traffic_record_t **tr
 int main(int argc, char *argv[]) {
 
     int already_running;
-    int status;
     setbuf(stdout, NULL);
     // Our process ID and Session ID
     pid_t pid, sid;
@@ -253,6 +251,10 @@ int main(int argc, char *argv[]) {
         }
     }
 
+    if(opendir(STAT_FILE_DIR) == NULL) {
+        mkdir(STAT_FILE_DIR, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+    }
+
     if(global_args.stat_iface_show || global_args.check_ip) {
         unsigned int ip = 0;
         if(global_args.show_ip != NULL) {
@@ -267,8 +269,8 @@ int main(int argc, char *argv[]) {
         if(already_running) {
             write_log("[daemon] restarting\n");
             kill(pid, SIGTERM);
-        } //else {
-            /* Daemon-monitor specific initialization goes here */
+        }
+        /* Daemon-monitor specific initialization goes here */
             printf("[sniffer] start\n");
             /* Fork off the parent process */
             pid = fork();
@@ -302,6 +304,7 @@ int main(int argc, char *argv[]) {
             //close(STDOUT_FILENO);
             //close(STDERR_FILENO);
             // create file with monitor's PID
+
             Traffic_record_t *rec_ptr;
             int rec_num;
             FILE *fi = get_records_from_iface_file(global_args.sniff_iface, &rec_ptr, &rec_num);
@@ -312,7 +315,6 @@ int main(int argc, char *argv[]) {
                 monitor_proc(global_args.sniff_iface, fi, rec_ptr, rec_num);
             }
             printf("[sniffer] Exit.\n");
-        //}
     }
     exit(EXIT_SUCCESS);
 }
